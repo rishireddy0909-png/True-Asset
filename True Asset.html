@@ -1,0 +1,1312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TrueAsset — Intelligent Fixed Asset Management</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+          colors: {
+            forge: {
+              50: '#f0fdfa', 100: '#ccfbf1', 200: '#99f6e4', 300: '#5eead4',
+              400: '#2dd4bf', 500: '#14b8a6', 600: '#0d9488', 700: '#0f766e',
+              800: '#115e59', 900: '#134e4a', 950: '#042f2e'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: 'Inter', system-ui, sans-serif; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    .glass { background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(51, 65, 85, 0.6); }
+    .card { background: #0f172a; border: 1px solid #1e293b; border-radius: 16px; }
+    .sidebar-link { transition: all 0.15s ease; }
+    .sidebar-link:hover, .sidebar-link.active { background: rgba(20, 184, 166, 0.12); color: #2dd4bf; }
+    .sidebar-link.active { border-left: 3px solid #14b8a6; }
+    .badge { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 9999px; }
+    .toast { animation: slideIn 0.3s ease; }
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    .modal-backdrop { background: rgba(2, 6, 23, 0.75); backdrop-filter: blur(4px); }
+    table th { position: sticky; top: 0; background: #0f172a; z-index: 10; }
+    .kpi-card { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+    .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 8px 25px -5px rgba(20, 184, 166, 0.15); }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: #14b8a6; box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.15); }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="fixed top-4 right-4 z-[100] space-y-2"></div>
+
+  <!-- App Shell -->
+  <div class="flex h-screen overflow-hidden">
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col flex-shrink-0 transition-all duration-300">
+      <div class="p-5 border-b border-slate-800">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-forge-400 to-forge-600 flex items-center justify-center shadow-lg shadow-forge-500/20">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+          </div>
+          <div>
+            <h1 class="font-bold text-lg tracking-tight">TrueAsset</h1>
+            <p class="text-xs text-slate-400">v2.0 · Fixed Assets</p>
+          </div>
+        </div>
+      </div>
+
+      <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+        <p class="px-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2">Main</p>
+        <a href="#" data-view="dashboard" class="sidebar-link active flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-300">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+          Dashboard
+        </a>
+        <a href="#" data-view="register" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-300">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+          Asset Register
+        </a>
+        <a href="#" data-view="depreciation" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-300">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+          Depreciation
+        </a>
+        <a href="#" data-view="maintenance" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-300">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          Maintenance
+        </a>
+        <a href="#" data-view="disposal" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-300">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+          Disposal
+        </a>
+
+        <p class="px-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2 mt-6">Reports</p>
+        <a href="#" data-view="schedule3" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-300">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          Schedule III
+        </a>
+        <a href="#" data-view="cavsit" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-300">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+          CA vs IT Act
+        </a>
+        <a href="#" data-view="analytics" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-300">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"/></svg>
+          Analytics
+        </a>
+
+        <p class="px-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2 mt-6">System</p>
+        <a href="#" data-view="activity" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-300">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          Activity Log
+        </a>
+        <a href="#" data-view="settings" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-300">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          Settings
+        </a>
+      </nav>
+
+      <div class="p-4 border-t border-slate-800">
+        <div class="text-xs text-slate-500 mb-1">Financial Year</div>
+        <div class="font-semibold text-forge-400" id="fy-display">FY 2025-26</div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-col overflow-hidden">
+      <!-- Top Bar -->
+      <header class="h-16 border-b border-slate-800 bg-slate-900/80 backdrop-blur flex items-center justify-between px-6 flex-shrink-0">
+        <div class="flex items-center gap-4">
+          <button id="menu-toggle" class="lg:hidden p-2 rounded-lg hover:bg-slate-800">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+          </button>
+          <h2 id="page-title" class="text-lg font-semibold">Dashboard</h2>
+        </div>
+        <div class="flex items-center gap-3">
+          <button onclick="openModal('importModal')" class="flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg border border-slate-700 hover:border-slate-600 hover:bg-slate-800 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+            Import
+          </button>
+          <button onclick="exportData()" class="flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg border border-slate-700 hover:border-slate-600 hover:bg-slate-800 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+            Export
+          </button>
+          <button onclick="openModal('addAssetModal')" class="flex items-center gap-2 px-4 py-1.5 text-sm font-medium rounded-lg bg-forge-600 hover:bg-forge-500 text-white shadow-lg shadow-forge-600/20 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            Add Asset
+          </button>
+        </div>
+      </header>
+
+      <!-- Views -->
+      <main class="flex-1 overflow-y-auto p-6">
+
+        <!-- DASHBOARD -->
+        <div id="view-dashboard" class="view space-y-6">
+          <!-- KPI Cards -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+            <div class="kpi-card card p-5">
+              <div class="flex items-center justify-between mb-3">
+                <span class="text-sm text-slate-400">Total Assets</span>
+                <div class="w-9 h-9 rounded-lg bg-forge-500/10 flex items-center justify-center">
+                  <svg class="w-5 h-5 text-forge-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                </div>
+              </div>
+              <div class="text-2xl font-bold" id="kpi-count">0</div>
+              <div class="text-xs text-slate-500 mt-1">Active assets in register</div>
+            </div>
+            <div class="kpi-card card p-5">
+              <div class="flex items-center justify-between mb-3">
+                <span class="text-sm text-slate-400">Gross Block</span>
+                <div class="w-9 h-9 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                  <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
+              </div>
+              <div class="text-2xl font-bold" id="kpi-gross">₹0</div>
+              <div class="text-xs text-slate-500 mt-1">Original cost of assets</div>
+            </div>
+            <div class="kpi-card card p-5">
+              <div class="flex items-center justify-between mb-3">
+                <span class="text-sm text-slate-400">Accum. Depreciation</span>
+                <div class="w-9 h-9 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                  <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"/></svg>
+                </div>
+              </div>
+              <div class="text-2xl font-bold" id="kpi-accum">₹0</div>
+              <div class="text-xs text-slate-500 mt-1">Companies Act (Book)</div>
+            </div>
+            <div class="kpi-card card p-5">
+              <div class="flex items-center justify-between mb-3">
+                <span class="text-sm text-slate-400">Net Block</span>
+                <div class="w-9 h-9 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                  <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
+              </div>
+              <div class="text-2xl font-bold text-forge-400" id="kpi-net">₹0</div>
+              <div class="text-xs text-slate-500 mt-1">Carrying amount</div>
+            </div>
+          </div>
+
+          <!-- Charts + Recent -->
+          <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <div class="xl:col-span-2 card p-5">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="font-semibold">Asset Category Distribution</h3>
+              </div>
+              <div class="h-64">
+                <canvas id="categoryChart"></canvas>
+              </div>
+            </div>
+            <div class="card p-5">
+              <h3 class="font-semibold mb-4">Recent Activity</h3>
+              <div id="recent-activity" class="space-y-3 max-h-64 overflow-y-auto text-sm">
+                <!-- filled by JS -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Stats Row -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="card p-5">
+              <h4 class="text-sm text-slate-400 mb-2">By Status</h4>
+              <div id="status-breakdown" class="space-y-2"></div>
+            </div>
+            <div class="card p-5">
+              <h4 class="text-sm text-slate-400 mb-2">Depreciation Method Mix</h4>
+              <div id="method-breakdown" class="space-y-2"></div>
+            </div>
+            <div class="card p-5">
+              <h4 class="text-sm text-slate-400 mb-2">Upcoming Maintenance</h4>
+              <div id="upcoming-maint" class="space-y-2 text-sm"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ASSET REGISTER -->
+        <div id="view-register" class="view hidden space-y-4">
+          <div class="flex flex-wrap items-center gap-3">
+            <div class="relative flex-1 min-w-[220px]">
+              <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+              <input id="search-assets" type="text" placeholder="Search assets by name, tag, location..." class="w-full pl-10 pr-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm focus:border-forge-500">
+            </div>
+            <select id="filter-category" class="px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm">
+              <option value="">All Categories</option>
+            </select>
+            <select id="filter-status" class="px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm">
+              <option value="">All Status</option>
+              <option value="Active">Active</option>
+              <option value="Under Maintenance">Under Maintenance</option>
+              <option value="Disposed">Disposed</option>
+              <option value="Idle">Idle</option>
+            </select>
+          </div>
+
+          <div class="card overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="text-left text-slate-400 border-b border-slate-800">
+                    <th class="px-4 py-3 font-medium">Asset ID</th>
+                    <th class="px-4 py-3 font-medium">Name</th>
+                    <th class="px-4 py-3 font-medium">Category</th>
+                    <th class="px-4 py-3 font-medium">Cost</th>
+                    <th class="px-4 py-3 font-medium">Net Book Value</th>
+                    <th class="px-4 py-3 font-medium">Location</th>
+                    <th class="px-4 py-3 font-medium">Status</th>
+                    <th class="px-4 py-3 font-medium">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="asset-table-body" class="divide-y divide-slate-800">
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- DEPRECIATION -->
+        <div id="view-depreciation" class="view hidden space-y-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-slate-400">Dual calculation: Companies Act (Schedule II) & Income Tax Act</p>
+            </div>
+            <button onclick="recalcAllDepreciation()" class="px-4 py-2 bg-forge-600 hover:bg-forge-500 text-white text-sm font-medium rounded-lg transition">
+              Recalculate All
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="card p-5">
+              <h3 class="font-semibold mb-1">Companies Act (Book)</h3>
+              <p class="text-xs text-slate-500 mb-4">Useful life based · SLM / WDV</p>
+              <div class="text-3xl font-bold text-forge-400" id="dep-book-total">₹0</div>
+              <div class="text-sm text-slate-400 mt-1">Current year depreciation</div>
+            </div>
+            <div class="card p-5">
+              <h3 class="font-semibold mb-1">Income Tax Act</h3>
+              <p class="text-xs text-slate-500 mb-4">Block rates · WDV</p>
+              <div class="text-3xl font-bold text-blue-400" id="dep-tax-total">₹0</div>
+              <div class="text-sm text-slate-400 mt-1">Current year depreciation</div>
+            </div>
+          </div>
+
+          <div class="card overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="text-left text-slate-400 border-b border-slate-800">
+                    <th class="px-4 py-3 font-medium">Asset</th>
+                    <th class="px-4 py-3 font-medium">Cost</th>
+                    <th class="px-4 py-3 font-medium">Method</th>
+                    <th class="px-4 py-3 font-medium">Useful Life</th>
+                    <th class="px-4 py-3 font-medium">Book Dep (CY)</th>
+                    <th class="px-4 py-3 font-medium">Tax Dep (CY)</th>
+                    <th class="px-4 py-3 font-medium">Net Book Value</th>
+                  </tr>
+                </thead>
+                <tbody id="dep-table-body" class="divide-y divide-slate-800">
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- MAINTENANCE -->
+        <div id="view-maintenance" class="view hidden space-y-4">
+          <div class="flex justify-between items-center">
+            <p class="text-sm text-slate-400">Track preventive & breakdown maintenance</p>
+            <button onclick="openModal('maintModal')" class="px-4 py-2 bg-forge-600 hover:bg-forge-500 text-white text-sm font-medium rounded-lg">+ Log Maintenance</button>
+          </div>
+          <div class="card overflow-hidden">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="text-left text-slate-400 border-b border-slate-800">
+                  <th class="px-4 py-3 font-medium">Date</th>
+                  <th class="px-4 py-3 font-medium">Asset</th>
+                  <th class="px-4 py-3 font-medium">Type</th>
+                  <th class="px-4 py-3 font-medium">Description</th>
+                  <th class="px-4 py-3 font-medium">Cost</th>
+                  <th class="px-4 py-3 font-medium">Status</th>
+                </tr>
+              </thead>
+              <tbody id="maint-table-body" class="divide-y divide-slate-800"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- DISPOSAL -->
+        <div id="view-disposal" class="view hidden space-y-4">
+          <div class="flex justify-between items-center">
+            <p class="text-sm text-slate-400">Record asset sales, scrap or write-offs</p>
+            <button onclick="openModal('disposalModal')" class="px-4 py-2 bg-forge-600 hover:bg-forge-500 text-white text-sm font-medium rounded-lg">+ Record Disposal</button>
+          </div>
+          <div class="card overflow-hidden">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="text-left text-slate-400 border-b border-slate-800">
+                  <th class="px-4 py-3 font-medium">Date</th>
+                  <th class="px-4 py-3 font-medium">Asset</th>
+                  <th class="px-4 py-3 font-medium">Type</th>
+                  <th class="px-4 py-3 font-medium">Sale Value</th>
+                  <th class="px-4 py-3 font-medium">Book Value</th>
+                  <th class="px-4 py-3 font-medium">Gain / (Loss)</th>
+                </tr>
+              </thead>
+              <tbody id="disposal-table-body" class="divide-y divide-slate-800"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- SCHEDULE III -->
+        <div id="view-schedule3" class="view hidden space-y-4">
+          <div class="flex justify-between items-center">
+            <div>
+              <h3 class="font-semibold">Schedule III — Fixed Assets</h3>
+              <p class="text-sm text-slate-400">As per Companies Act, 2013</p>
+            </div>
+            <button onclick="window.print()" class="px-4 py-2 border border-slate-700 hover:bg-slate-800 text-sm rounded-lg">Print / PDF</button>
+          </div>
+          <div class="card overflow-hidden">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="text-left text-slate-400 border-b border-slate-800">
+                  <th class="px-4 py-3 font-medium">Particulars</th>
+                  <th class="px-4 py-3 font-medium text-right">Gross Block</th>
+                  <th class="px-4 py-3 font-medium text-right">Accum. Dep.</th>
+                  <th class="px-4 py-3 font-medium text-right">Net Block</th>
+                </tr>
+              </thead>
+              <tbody id="sch3-body" class="divide-y divide-slate-800"></tbody>
+              <tfoot id="sch3-foot" class="border-t border-slate-700 font-semibold"></tfoot>
+            </table>
+          </div>
+        </div>
+
+        <!-- CA vs IT -->
+        <div id="view-cavsit" class="view hidden space-y-6">
+          <p class="text-sm text-slate-400">Comparison of depreciation under Companies Act vs Income Tax Act for deferred tax computation</p>
+          <div class="card overflow-hidden">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="text-left text-slate-400 border-b border-slate-800">
+                  <th class="px-4 py-3 font-medium">Asset / Block</th>
+                  <th class="px-4 py-3 font-medium text-right">Book Dep</th>
+                  <th class="px-4 py-3 font-medium text-right">Tax Dep</th>
+                  <th class="px-4 py-3 font-medium text-right">Difference</th>
+                  <th class="px-4 py-3 font-medium text-right">Deferred Tax Impact*</th>
+                </tr>
+              </thead>
+              <tbody id="cavsit-body" class="divide-y divide-slate-800"></tbody>
+            </table>
+          </div>
+          <p class="text-xs text-slate-500">* Assumes 25.17% tax rate (illustrative). Adjust in Settings.</p>
+        </div>
+
+        <!-- ANALYTICS -->
+        <div id="view-analytics" class="view hidden space-y-6">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="card p-5">
+              <h3 class="font-semibold mb-4">Gross Block by Category</h3>
+              <div class="h-72"><canvas id="analyticsChart1"></canvas></div>
+            </div>
+            <div class="card p-5">
+              <h3 class="font-semibold mb-4">Depreciation Trend (Projected)</h3>
+              <div class="h-72"><canvas id="analyticsChart2"></canvas></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ACTIVITY LOG -->
+        <div id="view-activity" class="view hidden">
+          <div class="card">
+            <div id="full-activity" class="divide-y divide-slate-800 max-h-[70vh] overflow-y-auto"></div>
+          </div>
+        </div>
+
+        <!-- SETTINGS -->
+        <div id="view-settings" class="view hidden space-y-6">
+          <div class="card p-6 max-w-2xl">
+            <h3 class="font-semibold mb-4">Company & Period Settings</h3>
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm text-slate-400 mb-1">Company Name</label>
+                <input id="set-company" type="text" value="Demo Manufacturing Pvt Ltd" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm">
+              </div>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm text-slate-400 mb-1">Financial Year</label>
+                  <select id="set-fy" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm">
+                    <option>FY 2025-26</option>
+                    <option>FY 2024-25</option>
+                    <option>FY 2026-27</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-sm text-slate-400 mb-1">Tax Rate (%)</label>
+                  <input id="set-taxrate" type="number" value="25.17" step="0.01" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm">
+                </div>
+              </div>
+              <div>
+                <label class="block text-sm text-slate-400 mb-1">Default Residual Value %</label>
+                <input id="set-residual" type="number" value="5" min="0" max="10" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm">
+              </div>
+              <button onclick="saveSettings()" class="px-5 py-2 bg-forge-600 hover:bg-forge-500 text-white text-sm font-medium rounded-lg">Save Settings</button>
+            </div>
+          </div>
+
+          <div class="card p-6 max-w-2xl">
+            <h3 class="font-semibold mb-2 text-red-400">Danger Zone</h3>
+            <p class="text-sm text-slate-400 mb-4">Clear all data and reset to sample assets.</p>
+            <button onclick="resetData()" class="px-4 py-2 border border-red-500/50 text-red-400 hover:bg-red-500/10 text-sm rounded-lg">Reset to Sample Data</button>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- ==================== MODALS ==================== -->
+
+  <!-- Add Asset Modal -->
+  <div id="addAssetModal" class="fixed inset-0 z-50 hidden items-center justify-center modal-backdrop">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto shadow-2xl">
+      <div class="flex items-center justify-between p-5 border-b border-slate-800">
+        <h3 class="text-lg font-semibold">Add New Asset</h3>
+        <button onclick="closeModal('addAssetModal')" class="p-1 hover:bg-slate-800 rounded-lg"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+      </div>
+      <form id="addAssetForm" class="p-5 space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="md:col-span-2">
+            <label class="block text-sm text-slate-400 mb-1">Asset Name *</label>
+            <input name="name" required class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm" placeholder="e.g. CNC Machine - Haas VF-2">
+          </div>
+          <div>
+            <label class="block text-sm text-slate-400 mb-1">Category *</label>
+            <select name="category" required class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm">
+              <option value="Plant & Machinery">Plant & Machinery</option>
+              <option value="Furniture & Fixtures">Furniture & Fixtures</option>
+              <option value="Office Equipment">Office Equipment</option>
+              <option value="Computers">Computers</option>
+              <option value="Vehicles">Vehicles</option>
+              <option value="Buildings">Buildings</option>
+              <option value="Land">Land</option>
+              <option value="Intangible Assets">Intangible Assets</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm text-slate-400 mb-1">Purchase Date *</label>
+            <input name="date" type="date" required class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm">
+          </div>
+          <div>
+            <label class="block text-sm text-slate-400 mb-1">Cost (₹) *</label>
+            <input name="cost" type="number" required min="0" step="0.01" class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm">
+          </div>
+          <div>
+            <label class="block text-sm text-slate-400 mb-1">Useful Life (Years)</label>
+            <input name="life" type="number" min="1" value="10" class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm">
+          </div>
+          <div>
+            <label class="block text-sm text-slate-400 mb-1">Depreciation Method</label>
+            <select name="method" class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm">
+              <option value="SLM">Straight Line (SLM)</option>
+              <option value="WDV">Written Down Value (WDV)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm text-slate-400 mb-1">Residual Value %</label>
+            <input name="residual" type="number" min="0" max="10" value="5" class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm">
+          </div>
+          <div>
+            <label class="block text-sm text-slate-400 mb-1">IT Act Rate %</label>
+            <input name="taxRate" type="number" min="0" max="100" value="15" class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm">
+          </div>
+          <div>
+            <label class="block text-sm text-slate-400 mb-1">Location</label>
+            <input name="location" class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm" placeholder="Factory Floor / HO">
+          </div>
+          <div>
+            <label class="block text-sm text-slate-400 mb-1">Custodian</label>
+            <input name="custodian" class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm">
+          </div>
+          <div>
+            <label class="block text-sm text-slate-400 mb-1">Tag / Serial</label>
+            <input name="tag" class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm">
+          </div>
+          <div>
+            <label class="block text-sm text-slate-400 mb-1">Vendor</label>
+            <input name="vendor" class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm">
+          </div>
+        </div>
+        <div class="flex justify-end gap-3 pt-2">
+          <button type="button" onclick="closeModal('addAssetModal')" class="px-4 py-2 text-sm border border-slate-700 rounded-lg hover:bg-slate-800">Cancel</button>
+          <button type="submit" class="px-5 py-2 text-sm bg-forge-600 hover:bg-forge-500 text-white font-medium rounded-lg">Add Asset</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Import Modal -->
+  <div id="importModal" class="fixed inset-0 z-50 hidden items-center justify-center modal-backdrop">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg mx-4 shadow-2xl">
+      <div class="flex items-center justify-between p-5 border-b border-slate-800">
+        <h3 class="text-lg font-semibold">Import Assets (CSV)</h3>
+        <button onclick="closeModal('importModal')" class="p-1 hover:bg-slate-800 rounded-lg"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+      </div>
+      <div class="p-5 space-y-4">
+        <p class="text-sm text-slate-400">Required columns: <code class="text-forge-400">name, cost</code>. Optional: category, date, life, method, residual, location, custodian, tag, status, vendor, taxRate</p>
+        <textarea id="csv-input" rows="8" class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm font-mono" placeholder="name,cost,category,date&#10;CNC Machine,1250000,Plant & Machinery,2024-04-15"></textarea>
+        <div class="flex justify-end gap-3">
+          <button onclick="closeModal('importModal')" class="px-4 py-2 text-sm border border-slate-700 rounded-lg hover:bg-slate-800">Cancel</button>
+          <button onclick="importCSV()" class="px-5 py-2 text-sm bg-forge-600 hover:bg-forge-500 text-white font-medium rounded-lg">Import</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Maintenance Modal -->
+  <div id="maintModal" class="fixed inset-0 z-50 hidden items-center justify-center modal-backdrop">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-md mx-4 shadow-2xl">
+      <div class="flex items-center justify-between p-5 border-b border-slate-800">
+        <h3 class="text-lg font-semibold">Log Maintenance</h3>
+        <button onclick="closeModal('maintModal')" class="p-1 hover:bg-slate-800 rounded-lg"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+      </div>
+      <form id="maintForm" class="p-5 space-y-4">
+        <div>
+          <label class="block text-sm text-slate-400 mb-1">Asset</label>
+          <select name="assetId" id="maint-asset-select" required class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm"></select>
+        </div>
+        <div>
+          <label class="block text-sm text-slate-400 mb-1">Type</label>
+          <select name="type" class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm">
+            <option>Preventive</option>
+            <option>Breakdown</option>
+            <option>Inspection</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm text-slate-400 mb-1">Date</label>
+          <input name="date" type="date" required class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm">
+        </div>
+        <div>
+          <label class="block text-sm text-slate-400 mb-1">Description</label>
+          <textarea name="desc" rows="2" class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm"></textarea>
+        </div>
+        <div>
+          <label class="block text-sm text-slate-400 mb-1">Cost (₹)</label>
+          <input name="cost" type="number" min="0" value="0" class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm">
+        </div>
+        <div class="flex justify-end gap-3">
+          <button type="button" onclick="closeModal('maintModal')" class="px-4 py-2 text-sm border border-slate-700 rounded-lg">Cancel</button>
+          <button type="submit" class="px-5 py-2 text-sm bg-forge-600 hover:bg-forge-500 text-white font-medium rounded-lg">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Disposal Modal -->
+  <div id="disposalModal" class="fixed inset-0 z-50 hidden items-center justify-center modal-backdrop">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-md mx-4 shadow-2xl">
+      <div class="flex items-center justify-between p-5 border-b border-slate-800">
+        <h3 class="text-lg font-semibold">Record Disposal</h3>
+        <button onclick="closeModal('disposalModal')" class="p-1 hover:bg-slate-800 rounded-lg"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+      </div>
+      <form id="disposalForm" class="p-5 space-y-4">
+        <div>
+          <label class="block text-sm text-slate-400 mb-1">Asset</label>
+          <select name="assetId" id="disposal-asset-select" required class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm"></select>
+        </div>
+        <div>
+          <label class="block text-sm text-slate-400 mb-1">Disposal Type</label>
+          <select name="type" class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm">
+            <option>Sale</option>
+            <option>Scrap</option>
+            <option>Write-off</option>
+            <option>Donation</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm text-slate-400 mb-1">Date</label>
+          <input name="date" type="date" required class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm">
+        </div>
+        <div>
+          <label class="block text-sm text-slate-400 mb-1">Sale / Recovery Value (₹)</label>
+          <input name="saleValue" type="number" min="0" value="0" class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm">
+        </div>
+        <div class="flex justify-end gap-3">
+          <button type="button" onclick="closeModal('disposalModal')" class="px-4 py-2 text-sm border border-slate-700 rounded-lg">Cancel</button>
+          <button type="submit" class="px-5 py-2 text-sm bg-forge-600 hover:bg-forge-500 text-white font-medium rounded-lg">Record</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // ==================== STATE ====================
+    let assets = [];
+    let maintenance = [];
+    let disposals = [];
+    let activity = [];
+    let settings = {
+      company: 'Demo Manufacturing Pvt Ltd',
+      fy: 'FY 2025-26',
+      taxRate: 25.17,
+      residual: 5
+    };
+    let charts = {};
+
+    // ==================== SAMPLE DATA ====================
+    const sampleAssets = [
+      { id: 'AF-1001', name: 'CNC Vertical Machining Centre', category: 'Plant & Machinery', cost: 2850000, date: '2023-06-12', life: 15, method: 'SLM', residual: 5, taxRate: 15, location: 'Shop Floor A', custodian: 'Ramesh K', tag: 'CNC-01', vendor: 'Haas Automation', status: 'Active' },
+      { id: 'AF-1002', name: 'Hydraulic Press 200T', category: 'Plant & Machinery', cost: 980000, date: '2022-11-03', life: 15, method: 'WDV', residual: 5, taxRate: 15, location: 'Shop Floor B', custodian: 'Suresh M', tag: 'HP-200', vendor: 'Godrej', status: 'Active' },
+      { id: 'AF-1003', name: 'Dell PowerEdge R750 Server', category: 'Computers', cost: 425000, date: '2024-01-18', life: 3, method: 'SLM', residual: 5, taxRate: 40, location: 'Server Room', custodian: 'IT Admin', tag: 'SRV-01', vendor: 'Dell', status: 'Active' },
+      { id: 'AF-1004', name: 'Toyota Innova Crysta', category: 'Vehicles', cost: 2150000, date: '2023-09-22', life: 8, method: 'WDV', residual: 5, taxRate: 15, location: 'HO Parking', custodian: 'Admin', tag: 'KA-01-AB-1234', vendor: 'Toyota', status: 'Active' },
+      { id: 'AF-1005', name: 'Office Workstation Set (12 nos)', category: 'Furniture & Fixtures', cost: 384000, date: '2024-04-05', life: 10, method: 'SLM', residual: 5, taxRate: 10, location: 'Admin Block', custodian: 'Facilities', tag: 'FF-WS-12', vendor: 'Godrej Interio', status: 'Active' },
+      { id: 'AF-1006', name: 'Factory Building - Unit 2', category: 'Buildings', cost: 12500000, date: '2021-03-15', life: 30, method: 'SLM', residual: 5, taxRate: 10, location: 'Plot 42, Peenya', custodian: 'Plant Head', tag: 'BLD-U2', vendor: 'Self Constructed', status: 'Active' },
+      { id: 'AF-1007', name: 'Air Compressor 50HP', category: 'Plant & Machinery', cost: 675000, date: '2024-07-01', life: 15, method: 'SLM', residual: 5, taxRate: 15, location: 'Utility Area', custodian: 'Maintenance', tag: 'AC-50', vendor: 'Atlas Copco', status: 'Under Maintenance' },
+      { id: 'AF-1008', name: 'ERP Software License', category: 'Intangible Assets', cost: 850000, date: '2023-04-01', life: 5, method: 'SLM', residual: 0, taxRate: 25, location: 'Cloud', custodian: 'IT Admin', tag: 'ERP-LIC', vendor: 'SAP', status: 'Active' }
+    ];
+
+    // ==================== UTILS ====================
+    function formatINR(n) {
+      if (n == null || isNaN(n)) return '₹0';
+      return '₹' + Number(n).toLocaleString('en-IN', { maximumFractionDigits: 0 });
+    }
+
+    function toast(msg, type = 'success') {
+      const el = document.createElement('div');
+      el.className = `toast px-4 py-3 rounded-lg text-sm font-medium shadow-lg ${type === 'success' ? 'bg-forge-600 text-white' : 'bg-red-600 text-white'}`;
+      el.textContent = msg;
+      document.getElementById('toast-container').appendChild(el);
+      setTimeout(() => el.remove(), 3200);
+    }
+
+    function logActivity(text) {
+      activity.unshift({ time: new Date().toISOString(), text });
+      if (activity.length > 100) activity.pop();
+      saveState();
+    }
+
+    function daysBetween(d1, d2) {
+      return Math.max(0, (new Date(d2) - new Date(d1)) / (1000 * 60 * 60 * 24));
+    }
+
+    function yearsHeld(purchaseDate, asOf = new Date()) {
+      return daysBetween(purchaseDate, asOf) / 365.25;
+    }
+
+    // ==================== DEPRECIATION ENGINE ====================
+    function calcBookDep(asset, asOf = new Date()) {
+      const cost = Number(asset.cost);
+      const residualPct = Number(asset.residual ?? 5) / 100;
+      const residual = cost * residualPct;
+      const depreciable = cost - residual;
+      const life = Number(asset.life) || 10;
+      const years = yearsHeld(asset.date, asOf);
+      if (years <= 0) return { cy: 0, accum: 0, nbv: cost };
+
+      if (asset.method === 'WDV') {
+        // Approximate WDV rate from life
+        const rate = 1 - Math.pow(residualPct || 0.05, 1 / life);
+        let nbv = cost;
+        let accum = 0;
+        const fullYears = Math.floor(years);
+        for (let i = 0; i < fullYears; i++) {
+          const dep = nbv * rate;
+          accum += dep;
+          nbv -= dep;
+        }
+        const partial = years - fullYears;
+        const cy = nbv * rate * partial;
+        accum += cy;
+        nbv = Math.max(residual, cost - accum);
+        return { cy, accum, nbv };
+      } else {
+        // SLM
+        const annual = depreciable / life;
+        const accum = Math.min(depreciable, annual * years);
+        const cy = Math.min(annual, depreciable - (accum - annual)); // approx current year
+        const nbv = cost - accum;
+        return { cy: Math.max(0, annual), accum, nbv: Math.max(residual, nbv) };
+      }
+    }
+
+    function calcTaxDep(asset, asOf = new Date()) {
+      // Simplified IT Act: WDV on individual asset using given rate, half rate if < 180 days in year of acquisition
+      const cost = Number(asset.cost);
+      const rate = (Number(asset.taxRate) || 15) / 100;
+      const years = yearsHeld(asset.date, asOf);
+      if (years <= 0) return { cy: 0, accum: 0, nbv: cost };
+
+      let nbv = cost;
+      let accum = 0;
+      const fullYears = Math.floor(years);
+      // First year half rate if put to use < 180 days (simplified: if purchased after Sep 30)
+      const purchase = new Date(asset.date);
+      const firstYearHalf = purchase.getMonth() >= 9; // Oct-Mar
+
+      for (let i = 0; i < fullYears; i++) {
+        const r = (i === 0 && firstYearHalf) ? rate / 2 : rate;
+        const dep = nbv * r;
+        accum += dep;
+        nbv -= dep;
+      }
+      const partial = years - fullYears;
+      const cy = nbv * rate * partial;
+      accum += cy;
+      nbv = Math.max(0, cost - accum);
+      return { cy, accum, nbv };
+    }
+
+    // ==================== STATE PERSISTENCE ====================
+    function saveState() {
+      localStorage.setItem('TrueAsset_data', JSON.stringify({ assets, maintenance, disposals, activity, settings }));
+    }
+
+    function loadState() {
+      const raw = localStorage.getItem('TrueAsset_data');
+      if (raw) {
+        try {
+          const data = JSON.parse(raw);
+          assets = data.assets || [];
+          maintenance = data.maintenance || [];
+          disposals = data.disposals || [];
+          activity = data.activity || [];
+          settings = { ...settings, ...(data.settings || {}) };
+        } catch (e) {
+          assets = [...sampleAssets];
+        }
+      } else {
+        assets = [...sampleAssets];
+        logActivity('System initialized with sample assets');
+      }
+      document.getElementById('fy-display').textContent = settings.fy;
+      document.getElementById('set-company').value = settings.company;
+      document.getElementById('set-fy').value = settings.fy;
+      document.getElementById('set-taxrate').value = settings.taxRate;
+      document.getElementById('set-residual').value = settings.residual;
+    }
+
+    // ==================== RENDER FUNCTIONS ====================
+    function updateKPIs() {
+      const active = assets.filter(a => a.status !== 'Disposed');
+      const gross = active.reduce((s, a) => s + Number(a.cost), 0);
+      let accum = 0, net = 0;
+      active.forEach(a => {
+        const d = calcBookDep(a);
+        accum += d.accum;
+        net += d.nbv;
+      });
+      document.getElementById('kpi-count').textContent = active.length;
+      document.getElementById('kpi-gross').textContent = formatINR(gross);
+      document.getElementById('kpi-accum').textContent = formatINR(accum);
+      document.getElementById('kpi-net').textContent = formatINR(net);
+    }
+
+    function renderAssetTable() {
+      const q = (document.getElementById('search-assets')?.value || '').toLowerCase();
+      const cat = document.getElementById('filter-category')?.value || '';
+      const st = document.getElementById('filter-status')?.value || '';
+
+      let filtered = assets.filter(a => {
+        if (q && !(a.name + a.id + (a.location||'') + (a.tag||'')).toLowerCase().includes(q)) return false;
+        if (cat && a.category !== cat) return false;
+        if (st && a.status !== st) return false;
+        return true;
+      });
+
+      const tbody = document.getElementById('asset-table-body');
+      tbody.innerHTML = filtered.map(a => {
+        const dep = calcBookDep(a);
+        const statusColor = {
+          'Active': 'bg-emerald-500/15 text-emerald-400',
+          'Under Maintenance': 'bg-amber-500/15 text-amber-400',
+          'Disposed': 'bg-slate-500/15 text-slate-400',
+          'Idle': 'bg-blue-500/15 text-blue-400'
+        }[a.status] || 'bg-slate-500/15 text-slate-400';
+        return `<tr class="hover:bg-slate-800/50">
+          <td class="px-4 py-3 font-mono text-xs text-forge-400">${a.id}</td>
+          <td class="px-4 py-3 font-medium">${a.name}</td>
+          <td class="px-4 py-3 text-slate-400">${a.category}</td>
+          <td class="px-4 py-3">${formatINR(a.cost)}</td>
+          <td class="px-4 py-3 font-medium">${formatINR(dep.nbv)}</td>
+          <td class="px-4 py-3 text-slate-400">${a.location || '—'}</td>
+          <td class="px-4 py-3"><span class="badge ${statusColor}">${a.status}</span></td>
+          <td class="px-4 py-3">
+            <button onclick="deleteAsset('${a.id}')" class="text-slate-500 hover:text-red-400 text-xs">Delete</button>
+          </td>
+        </tr>`;
+      }).join('') || '<tr><td colspan="8" class="px-4 py-8 text-center text-slate-500">No assets found</td></tr>';
+    }
+
+    function renderDepTable() {
+      const tbody = document.getElementById('dep-table-body');
+      let bookTotal = 0, taxTotal = 0;
+      const rows = assets.filter(a => a.status !== 'Disposed').map(a => {
+        const book = calcBookDep(a);
+        const tax = calcTaxDep(a);
+        bookTotal += book.cy;
+        taxTotal += tax.cy;
+        return `<tr class="hover:bg-slate-800/50">
+          <td class="px-4 py-3"><div class="font-medium">${a.name}</div><div class="text-xs text-slate-500">${a.id}</div></td>
+          <td class="px-4 py-3">${formatINR(a.cost)}</td>
+          <td class="px-4 py-3"><span class="badge bg-slate-700 text-slate-300">${a.method}</span></td>
+          <td class="px-4 py-3">${a.life} yrs</td>
+          <td class="px-4 py-3 text-forge-400">${formatINR(book.cy)}</td>
+          <td class="px-4 py-3 text-blue-400">${formatINR(tax.cy)}</td>
+          <td class="px-4 py-3 font-medium">${formatINR(book.nbv)}</td>
+        </tr>`;
+      });
+      tbody.innerHTML = rows.join('') || '<tr><td colspan="7" class="px-4 py-8 text-center text-slate-500">No assets</td></tr>';
+      document.getElementById('dep-book-total').textContent = formatINR(bookTotal);
+      document.getElementById('dep-tax-total').textContent = formatINR(taxTotal);
+    }
+
+    function renderSchedule3() {
+      const groups = {};
+      assets.filter(a => a.status !== 'Disposed').forEach(a => {
+        if (!groups[a.category]) groups[a.category] = { gross: 0, accum: 0, net: 0 };
+        const d = calcBookDep(a);
+        groups[a.category].gross += Number(a.cost);
+        groups[a.category].accum += d.accum;
+        groups[a.category].net += d.nbv;
+      });
+      const tbody = document.getElementById('sch3-body');
+      let tg = 0, ta = 0, tn = 0;
+      tbody.innerHTML = Object.entries(groups).map(([cat, v]) => {
+        tg += v.gross; ta += v.accum; tn += v.net;
+        return `<tr>
+          <td class="px-4 py-3">${cat}</td>
+          <td class="px-4 py-3 text-right">${formatINR(v.gross)}</td>
+          <td class="px-4 py-3 text-right">${formatINR(v.accum)}</td>
+          <td class="px-4 py-3 text-right font-medium">${formatINR(v.net)}</td>
+        </tr>`;
+      }).join('');
+      document.getElementById('sch3-foot').innerHTML = `<tr>
+        <td class="px-4 py-3">Total</td>
+        <td class="px-4 py-3 text-right">${formatINR(tg)}</td>
+        <td class="px-4 py-3 text-right">${formatINR(ta)}</td>
+        <td class="px-4 py-3 text-right text-forge-400">${formatINR(tn)}</td>
+      </tr>`;
+    }
+
+    function renderCAvsIT() {
+      const tbody = document.getElementById('cavsit-body');
+      const rate = settings.taxRate / 100;
+      tbody.innerHTML = assets.filter(a => a.status !== 'Disposed').map(a => {
+        const book = calcBookDep(a);
+        const tax = calcTaxDep(a);
+        const diff = tax.cy - book.cy;
+        const dti = diff * rate;
+        return `<tr>
+          <td class="px-4 py-3">${a.name}</td>
+          <td class="px-4 py-3 text-right">${formatINR(book.cy)}</td>
+          <td class="px-4 py-3 text-right">${formatINR(tax.cy)}</td>
+          <td class="px-4 py-3 text-right ${diff >= 0 ? 'text-emerald-400' : 'text-red-400'}">${formatINR(diff)}</td>
+          <td class="px-4 py-3 text-right">${formatINR(dti)}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    function renderMaint() {
+      const tbody = document.getElementById('maint-table-body');
+      tbody.innerHTML = maintenance.map(m => {
+        const asset = assets.find(a => a.id === m.assetId);
+        return `<tr>
+          <td class="px-4 py-3">${m.date}</td>
+          <td class="px-4 py-3">${asset ? asset.name : m.assetId}</td>
+          <td class="px-4 py-3"><span class="badge bg-slate-700">${m.type}</span></td>
+          <td class="px-4 py-3 text-slate-400">${m.desc || '—'}</td>
+          <td class="px-4 py-3">${formatINR(m.cost)}</td>
+          <td class="px-4 py-3"><span class="badge bg-emerald-500/15 text-emerald-400">Completed</span></td>
+        </tr>`;
+      }).join('') || '<tr><td colspan="6" class="px-4 py-8 text-center text-slate-500">No maintenance records</td></tr>';
+    }
+
+    function renderDisposals() {
+      const tbody = document.getElementById('disposal-table-body');
+      tbody.innerHTML = disposals.map(d => {
+        const gain = d.saleValue - d.bookValue;
+        return `<tr>
+          <td class="px-4 py-3">${d.date}</td>
+          <td class="px-4 py-3">${d.assetName}</td>
+          <td class="px-4 py-3"><span class="badge bg-slate-700">${d.type}</span></td>
+          <td class="px-4 py-3">${formatINR(d.saleValue)}</td>
+          <td class="px-4 py-3">${formatINR(d.bookValue)}</td>
+          <td class="px-4 py-3 ${gain >= 0 ? 'text-emerald-400' : 'text-red-400'}">${formatINR(gain)}</td>
+        </tr>`;
+      }).join('') || '<tr><td colspan="6" class="px-4 py-8 text-center text-slate-500">No disposals recorded</td></tr>';
+    }
+
+    function renderActivity() {
+      const recent = document.getElementById('recent-activity');
+      const full = document.getElementById('full-activity');
+      const html = activity.slice(0, 8).map(a => `
+        <div class="flex gap-3">
+          <div class="w-1.5 h-1.5 mt-2 rounded-full bg-forge-500 flex-shrink-0"></div>
+          <div>
+            <div class="text-slate-300">${a.text}</div>
+            <div class="text-xs text-slate-500">${new Date(a.time).toLocaleString('en-IN')}</div>
+          </div>
+        </div>`).join('') || '<p class="text-slate-500">No activity yet</p>';
+      if (recent) recent.innerHTML = html;
+      if (full) full.innerHTML = activity.map(a => `
+        <div class="px-5 py-3 flex justify-between items-start gap-4">
+          <div class="text-sm">${a.text}</div>
+          <div class="text-xs text-slate-500 whitespace-nowrap">${new Date(a.time).toLocaleString('en-IN')}</div>
+        </div>`).join('') || '<div class="p-8 text-center text-slate-500">No activity</div>';
+    }
+
+    function renderDashboardExtras() {
+      // Status breakdown
+      const statusCount = {};
+      assets.forEach(a => { statusCount[a.status] = (statusCount[a.status] || 0) + 1; });
+      document.getElementById('status-breakdown').innerHTML = Object.entries(statusCount).map(([s, c]) =>
+        `<div class="flex justify-between text-sm"><span class="text-slate-400">${s}</span><span class="font-medium">${c}</span></div>`
+      ).join('');
+
+      // Method mix
+      const methodCount = {};
+      assets.filter(a => a.status !== 'Disposed').forEach(a => { methodCount[a.method] = (methodCount[a.method] || 0) + 1; });
+      document.getElementById('method-breakdown').innerHTML = Object.entries(methodCount).map(([m, c]) =>
+        `<div class="flex justify-between text-sm"><span class="text-slate-400">${m}</span><span class="font-medium">${c}</span></div>`
+      ).join('');
+
+      // Upcoming maint (mock)
+      document.getElementById('upcoming-maint').innerHTML = `
+        <div class="text-slate-400">Air Compressor 50HP — due in 12 days</div>
+        <div class="text-slate-400">CNC Machine — annual service in 45 days</div>
+        <div class="text-slate-500 text-xs mt-2">Based on last maintenance + schedule</div>`;
+    }
+
+    function updateCategoryFilter() {
+      const cats = [...new Set(assets.map(a => a.category))];
+      const sel = document.getElementById('filter-category');
+      const current = sel.value;
+      sel.innerHTML = '<option value="">All Categories</option>' + cats.map(c => `<option value="${c}">${c}</option>`).join('');
+      sel.value = current;
+    }
+
+    function updateAssetSelects() {
+      const active = assets.filter(a => a.status !== 'Disposed');
+      const opts = active.map(a => `<option value="${a.id}">${a.name} (${a.id})</option>`).join('');
+      document.getElementById('maint-asset-select').innerHTML = opts;
+      document.getElementById('disposal-asset-select').innerHTML = opts;
+    }
+
+    // Charts
+    function renderCharts() {
+      const cats = {};
+      assets.filter(a => a.status !== 'Disposed').forEach(a => {
+        cats[a.category] = (cats[a.category] || 0) + Number(a.cost);
+      });
+      const labels = Object.keys(cats);
+      const data = Object.values(cats);
+
+      if (charts.category) charts.category.destroy();
+      const ctx = document.getElementById('categoryChart');
+      if (ctx) {
+        charts.category = new Chart(ctx, {
+          type: 'doughnut',
+          data: {
+            labels,
+            datasets: [{
+              data,
+              backgroundColor: ['#14b8a6', '#3b82f6', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16', '#f97316'],
+              borderWidth: 0
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { position: 'right', labels: { color: '#94a3b8', boxWidth: 12, padding: 12 } }
+            }
+          }
+        });
+      }
+
+      // Analytics charts
+      if (charts.a1) charts.a1.destroy();
+      const ctx1 = document.getElementById('analyticsChart1');
+      if (ctx1) {
+        charts.a1 = new Chart(ctx1, {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: [{
+              label: 'Gross Block',
+              data,
+              backgroundColor: '#14b8a6',
+              borderRadius: 6
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { ticks: { color: '#94a3b8' }, grid: { color: '#1e293b' } },
+              y: { ticks: { color: '#94a3b8', callback: v => '₹' + (v/100000).toFixed(1) + 'L' }, grid: { color: '#1e293b' } }
+            }
+          }
+        });
+      }
+
+      if (charts.a2) charts.a2.destroy();
+      const ctx2 = document.getElementById('analyticsChart2');
+      if (ctx2) {
+        // Simple 5-year projection of total book dep
+        const years = ['FY25-26', 'FY26-27', 'FY27-28', 'FY28-29', 'FY29-30'];
+        const proj = years.map((_, i) => {
+          let total = 0;
+          assets.filter(a => a.status !== 'Disposed').forEach(a => {
+            const future = new Date();
+            future.setFullYear(future.getFullYear() + i);
+            total += calcBookDep(a, future).cy;
+          });
+          return total;
+        });
+        charts.a2 = new Chart(ctx2, {
+          type: 'line',
+          data: {
+            labels: years,
+            datasets: [{
+              label: 'Book Depreciation',
+              data: proj,
+              borderColor: '#14b8a6',
+              backgroundColor: 'rgba(20,184,166,0.1)',
+              fill: true,
+              tension: 0.3
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { labels: { color: '#94a3b8' } } },
+            scales: {
+              x: { ticks: { color: '#94a3b8' }, grid: { color: '#1e293b' } },
+              y: { ticks: { color: '#94a3b8', callback: v => '₹' + (v/1000).toFixed(0) + 'K' }, grid: { color: '#1e293b' } }
+            }
+          }
+        });
+      }
+    }
+
+    function refreshAll() {
+      updateKPIs();
+      renderAssetTable();
+      renderDepTable();
+      renderSchedule3();
+      renderCAvsIT();
+      renderMaint();
+      renderDisposals();
+      renderActivity();
+      renderDashboardExtras();
+      updateCategoryFilter();
+      updateAssetSelects();
+      renderCharts();
+    }
+
+    // ==================== ACTIONS ====================
+    function openModal(id) {
+      const m = document.getElementById(id);
+      m.classList.remove('hidden');
+      m.classList.add('flex');
+    }
+    function closeModal(id) {
+      const m = document.getElementById(id);
+      m.classList.add('hidden');
+      m.classList.remove('flex');
+    }
+
+    document.getElementById('addAssetForm').addEventListener('submit', e => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const id = 'AF-' + (1000 + assets.length + 1);
+      const asset = {
+        id,
+        name: fd.get('name'),
+        category: fd.get('category'),
+        cost: Number(fd.get('cost')),
+        date: fd.get('date'),
+        life: Number(fd.get('life')) || 10,
+        method: fd.get('method'),
+        residual: Number(fd.get('residual')) || 5,
+        taxRate: Number(fd.get('taxRate')) || 15,
+        location: fd.get('location'),
+        custodian: fd.get('custodian'),
+        tag: fd.get('tag'),
+        vendor: fd.get('vendor'),
+        status: 'Active'
+      };
+      assets.push(asset);
+      logActivity(`Added asset: ${asset.name} (${asset.id})`);
+      saveState();
+      refreshAll();
+      closeModal('addAssetModal');
+      e.target.reset();
+      toast('Asset added successfully');
+    });
+
+    document.getElementById('maintForm').addEventListener('submit', e => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      maintenance.unshift({
+        assetId: fd.get('assetId'),
+        type: fd.get('type'),
+        date: fd.get('date'),
+        desc: fd.get('desc'),
+        cost: Number(fd.get('cost')) || 0
+      });
+      const asset = assets.find(a => a.id === fd.get('assetId'));
+      if (asset && fd.get('type') === 'Breakdown') asset.status = 'Under Maintenance';
+      logActivity(`Maintenance logged for ${asset ? asset.name : fd.get('assetId')}`);
+      saveState();
+      refreshAll();
+      closeModal('maintModal');
+      toast('Maintenance recorded');
+    });
+
+    document.getElementById('disposalForm').addEventListener('submit', e => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const asset = assets.find(a => a.id === fd.get('assetId'));
+      if (!asset) return;
+      const book = calcBookDep(asset);
+      disposals.unshift({
+        assetId: asset.id,
+        assetName: asset.name,
+        type: fd.get('type'),
+        date: fd.get('date'),
+        saleValue: Number(fd.get('saleValue')) || 0,
+        bookValue: book.nbv
+      });
+      asset.status = 'Disposed';
+      logActivity(`Disposed asset: ${asset.name} via ${fd.get('type')}`);
+      saveState();
+      refreshAll();
+      closeModal('disposalModal');
+      toast('Disposal recorded');
+    });
+
+    function deleteAsset(id) {
+      if (!confirm('Delete this asset permanently?')) return;
+      const a = assets.find(x => x.id === id);
+      assets = assets.filter(x => x.id !== id);
+      logActivity(`Deleted asset: ${a ? a.name : id}`);
+      saveState();
+      refreshAll();
+      toast('Asset deleted', 'error');
+    }
+
+    function importCSV() {
+      const text = document.getElementById('csv-input').value.trim();
+      if (!text) return toast('Paste CSV data first', 'error');
+      const lines = text.split('\n').filter(l => l.trim());
+      const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+      let count = 0;
+      for (let i = 1; i < lines.length; i++) {
+        const cols = lines[i].split(',').map(c => c.trim());
+        const row = {};
+        headers.forEach((h, idx) => row[h] = cols[idx]);
+        if (!row.name || !row.cost) continue;
+        assets.push({
+          id: 'AF-' + (1000 + assets.length + 1),
+          name: row.name,
+          category: row.category || 'Plant & Machinery',
+          cost: Number(row.cost),
+          date: row.date || new Date().toISOString().slice(0,10),
+          life: Number(row.life) || 10,
+          method: row.method || 'SLM',
+          residual: Number(row.residual) || 5,
+          taxRate: Number(row.taxrate) || 15,
+          location: row.location || '',
+          custodian: row.custodian || '',
+          tag: row.tag || '',
+          vendor: row.vendor || '',
+          status: row.status || 'Active'
+        });
+        count++;
+      }
+      logActivity(`Imported ${count} assets via CSV`);
+      saveState();
+      refreshAll();
+      closeModal('importModal');
+      toast(`Imported ${count} assets`);
+    }
+
+    function exportData() {
+      const data = { assets, maintenance, disposals, settings, exportedAt: new Date().toISOString() };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `TrueAsset_Backup_${new Date().toISOString().slice(0,10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast('Backup exported');
+    }
+
+    function recalcAllDepreciation() {
+      refreshAll();
+      toast('Depreciation recalculated');
+    }
+
+    function saveSettings() {
+      settings.company = document.getElementById('set-company').value;
+      settings.fy = document.getElementById('set-fy').value;
+      settings.taxRate = Number(document.getElementById('set-taxrate').value) || 25.17;
+      settings.residual = Number(document.getElementById('set-residual').value) || 5;
+      document.getElementById('fy-display').textContent = settings.fy;
+      saveState();
+      refreshAll();
+      toast('Settings saved');
+    }
+
+    function resetData() {
+      if (!confirm('This will erase all current data and restore sample assets. Continue?')) return;
+      localStorage.removeItem('TrueAsset_data');
+      assets = [...sampleAssets];
+      maintenance = [];
+      disposals = [];
+      activity = [];
+      logActivity('Data reset to sample assets');
+      saveState();
+      refreshAll();
+      toast('Reset complete');
+    }
+
+    // Navigation
+    document.querySelectorAll('.sidebar-link').forEach(link => {
+      link.addEventListener('click', e => {
+        e.preventDefault();
+        const view = link.dataset.view;
+        document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+        link.classList.add('active');
+        document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+        document.getElementById('view-' + view).classList.remove('hidden');
+        document.getElementById('page-title').textContent = link.textContent.trim();
+        if (view === 'analytics' || view === 'dashboard') renderCharts();
+      });
+    });
+
+    // Search & filters
+    document.getElementById('search-assets')?.addEventListener('input', renderAssetTable);
+    document.getElementById('filter-category')?.addEventListener('change', renderAssetTable);
+    document.getElementById('filter-status')?.addEventListener('change', renderAssetTable);
+
+    // Init
+    loadState();
+    refreshAll();
+  </script>
+</body>
+</html>
